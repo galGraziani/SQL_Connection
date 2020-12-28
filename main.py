@@ -379,3 +379,28 @@ insert_Favorites()
 # insert_Online_Experiences()
 # insert_Live_Languages()
 # insert_Online_Languages()
+
+from geopy.geocoders import get_geocoder_for_service
+from faker import Faker
+
+def geocode(geocoder, config, query):
+    cls = get_geocoder_for_service(geocoder)
+    geolocator = cls(**config)
+    location = geolocator.geocode(query)
+    return location.address
+
+def get_country_from_city(city):
+    generated_address = geocode("nominatim", dict(user_agent="geoapiExercises"), city)
+    return generated_address
+
+fake = Faker()
+lst = []
+for i in range(300):
+    try:
+        city = str(fake.city())
+        temp = get_country_from_city(city)
+        temp = temp.split(', ')
+        lst.append(temp[-1])
+    except Exception as e:
+        print(str(e))
+print(lst)
