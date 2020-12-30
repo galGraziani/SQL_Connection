@@ -11,13 +11,15 @@ DB_For_Project = Sql_Server_DataBase("XPS\SQLEXPRESS", "Project_For_DB")
 
 def get_Random_Password():
     password_Length = int(random.choice([10, 11, 12, 13, 14, 15, 16]))
-    password_characters = string.ascii_letters + string.digits
+    password_characters = string.ascii_letters
+    password_numbers = string.digits
     password = []
 
-    for x in range(password_Length):
+    for x in range(int(password_Length / 2)):
         password.append(random.choice(password_characters))
+        password.append(random.choice(password_numbers))
 
-    return ''.join(password) + random.choice(['B', 'C'])
+    return ''.join(password)
 
 
 def getRandomBirthDate():
@@ -64,10 +66,23 @@ def insertCUSTOMERS():
 def insertLOCATIONS():
     location_id_counter = 1
 
+    countries_dict = {'Argentina': ['Buenos Aires', 'Cordoba', 'Rosario', 'Mendoza', 'Mar del' 'Plata', 'Salta'],
+                      'Brazil': ['Rio de Janeiro', 'Salvador', 'Fortaleza', 'Manaus', 'Porto Alegre', 'Natal',
+                                 'Osasco'],
+                      "Germany": ["Berlin", "Munich", "Cologne", "Dortmund", "Hamburg", "Bremen", "Hanover", "Bochum"],
+                      "Spain": ["Madrid", "Barcelona", "Valencia", "Bilbao", "Las Palmas"],
+                      "Israel": ["Tel Aviv", "Haifa", "Eilat", "Beer Sheva", "Jerusalem"],
+                      "USA": ["New York", "Los Angeles", "Chicago", "San Antonio", "Philadelphia", "Dallas",
+                              "San Diego",
+                              "Austin", "San Jose", "El Paso", "Boston", "Denver", "Las Vegas", "Mesa", "Atlanta"],
+                      "Russia": ["Moscow", "Kazan", "Novosibirsk", "Omsk", "Ufa", "Perm"]
+                      }
+
     for i in range(800):
+        countries = list(countries_dict.keys())
         location_id = location_id_counter
-        country = fake.country()
-        city = fake.city()
+        country = random.choice(list(countries_dict.keys()))
+        city = random.choice(countries_dict.get(country))
         street = fake.street_name()
         house_num = random.randrange(200)
         zip_code = fake.postcode()
@@ -81,8 +96,8 @@ def insertLOCATIONS():
             DB_For_Project.myDB.commit()
             location_id_counter += 1
 
-        except:
-            print('problem with query')
+        except Exception as e:
+            print(e)
 
 
 def random_Email_Customers():
@@ -102,7 +117,7 @@ def random_Locaion():
 def insertPRODUCTS():
     product_id_counter = 0
 
-    for i in range(13):
+    for i in range(1600):
         price = round(random.uniform(30.0, 1000.9), 2)
         host_email = random_Email_Customers()
 
@@ -281,10 +296,10 @@ def insert_Online_Experiences():
         online_id = str(product_id_counter)
         tonnage = random.randrange(0, 50)
         max_capacity = str(random.randrange(tonnage, tonnage + 20))
-        location = 'NULL'
         query_string = 'INSERT INTO OnlineExperiences VALUES(' + online_id + ', ' + str(
-            tonnage) + ', ' + max_capacity + ', ' + location + ');'
+            tonnage) + ', ' + max_capacity + ');'
 
+        print(query_string)
         DB_For_Project.send_Query(query_string)
         DB_For_Project.myDB.commit()
         product_id_counter += 1
@@ -322,15 +337,15 @@ def insert_Online_Languages():
 
 def insert_Payment_Methods():
     order_id_counter = 1
-    for i in range (200):
-        card_number = str(fake.credit_card_number())
+    for i in range(200):
+        card_provider = random.choice(['visa', 'amex', 'master card'])
+        card_number = str(fake.credit_card_number(card_type=card_provider))
         experation_date = fake.credit_card_expire()
-
         search_id = random_ip_and_datetime()
         ip_adress = search_id[0]
         dt_search = str(search_id[1])
         order_id = str(order_id_counter)
-        query_string = 'INSERT INTO [Payment Methods] VALUES(\'' + card_number + '\', \'' + experation_date + '\', \'' + ip_adress + '\', \'' + dt_search + '\','+order_id+');'
+        query_string = 'INSERT INTO [Payment Methods] VALUES(\'' + card_number + '\', \'' + experation_date + '\',  \'' + card_provider + '\', \'' + ip_adress + '\', \'' + dt_search + '\',' + order_id + ');'
         print(query_string)
         DB_For_Project.send_Query(query_string)
         DB_For_Project.myDB.commit()
@@ -338,22 +353,25 @@ def insert_Payment_Methods():
 
 
 def insert_Retrieved():
+    for i in range(1000):
+        try:
+            search_id = random_ip_and_datetime()
+            ip_address = str(search_id[0])
+            dt_search = str(search_id[1])
+            product_id = str(random_Product())
 
-    for i in range(120):
-        search_id = random_ip_and_datetime()
-        ip_address = str(search_id[0])
-        dt_search = str(search_id[1])
-        product_id = str(random_Product())
+            query_string = 'INSERT INTO Retrieved VALUES(\'' + str(
+                ip_address) + '\', \'' + dt_search + '\', ' + product_id + ');'
+            print(query_string)
+            DB_For_Project.send_Query(query_string)
+            DB_For_Project.myDB.commit()
+        except:
+            print('Error')
 
-        query_string = 'INSERT INTO Retrieved VALUES(\'' + str(ip_address) + '\', \'' + dt_search + '\', ' + product_id + ');'
-        print(query_string)
-        DB_For_Project.send_Query(query_string)
-        DB_For_Project.myDB.commit()
 
 def insert_Favorites():
-
     for i in range(1000):
-        email= random_Email_Customers()
+        email = random_Email_Customers()
         product_id = random_Product()
         dt_add = str(fake.date_time_this_year())
 
@@ -362,7 +380,13 @@ def insert_Favorites():
         DB_For_Project.send_Query(query_string)
         DB_For_Project.myDB.commit()
 
-insert_Favorites()
+
+def insert_Distinct_Lookups():
+    insert_countries = 'insert into Countries select distinct country from Locations'
+    insert_cities = 'insert into Cities select distinct city from Locations'
+    DB_For_Project.send_Query(insert_countries)
+    DB_For_Project.myDB.commit()
+
 
 # insertCUSTOMERS()
 # insertLOCATIONS()
@@ -379,4 +403,5 @@ insert_Favorites()
 # insert_Online_Experiences()
 # insert_Live_Languages()
 # insert_Online_Languages()
-
+# insert_Favorites()
+# insert_Distinct_Lookups()
