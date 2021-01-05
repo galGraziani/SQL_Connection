@@ -6,8 +6,11 @@ from faker import Faker
 
 fake = Faker()
 
+############### DB Connector - Enter (user_name, DB_name) ##############
 DB_For_Project = Sql_Server_DataBase("XPS\SQLEXPRESS", "Project_For_DB")
 
+
+############### Random Info Function #######################
 
 def get_Random_Password():
     password_Length = int(random.choice([10, 11, 12, 13, 14, 15, 16]))
@@ -34,11 +37,101 @@ def getRandomBirthDate():
     return str(random_date)
 
 
-# def listToQueryString(lst):
-#     var_string = ', '.join(lst)
-#     query_string = 'INSERT INTO table VALUES (%s);' % var_string
-#     return query_string
+def random_Product():
+    product_DF = DB_For_Project.query_To_Pandas('SELECT ProductID FROM Products')
+    product_id_list = product_DF['ProductID'].tolist()
 
+    return str(random.choice(product_id_list))
+
+
+def random_Property():
+    property_DF = DB_For_Project.query_To_Pandas('SELECT PropertyID FROM Properties')
+    property_id_list = property_DF['PropertyID'].tolist()
+
+    return str(random.choice(property_id_list))
+
+
+def random_Live_Experience():
+    live_experiences_DF = DB_For_Project.query_To_Pandas('SELECT LiveExperienceID FROM LiveExperiences')
+    live_experiences_list = live_experiences_DF['LiveExperienceID'].tolist()
+
+    return str(random.choice(live_experiences_list))
+
+
+def random_Online_Experience():
+    online_experiences_DF = DB_For_Project.query_To_Pandas('SELECT OnlineExperienceID FROM OnlineExperiences')
+    online_experiences_list = online_experiences_DF['OnlineExperienceID'].tolist()
+
+    return str(random.choice(online_experiences_list))
+
+
+def random_ip_and_datetime():
+    searchs_DF = DB_For_Project.query_To_Pandas('SELECT IPAddress,[DT-search], type FROM Searchs')
+    ip_list = searchs_DF['IPAddress'].tolist()
+    dt_list = searchs_DF['DT-search'].tolist()
+    type_list = searchs_DF['type'].tolist()
+    search_id_list = []
+
+    for i in range(len(ip_list)):
+        search_id_list.append([ip_list[i], dt_list[i], type_list[i]])
+
+    return random.choice(search_id_list)
+
+def random_ip_and_dt_not_ordered(counter):
+    searchs_DF = DB_For_Project.query_To_Pandas('select IPAddress,[DT-search],type from Searchs except select'
+                                                ' s.IPAddress,s.[DT-search], s.type from Orders as o join Searchs as s'
+                                                ' on o.[DT-Search]=s.[DT-search] and o.IPAddress=s.IPAddress')
+    ip_list = searchs_DF['IPAddress'].tolist()
+    dt_list = searchs_DF['DT-search'].tolist()
+    type_list = searchs_DF['type'].tolist()
+    search_id_list =[]
+    for i in range(len(ip_list)):
+        search_id_list.append([ip_list[i], dt_list[i], type_list[i]])
+
+    return search_id_list[counter]
+
+def random_Orders(counter):
+    orders_customers_join_DF = DB_For_Project.query_To_Pandas(
+        'select S.Email, O.OrderID from Orders as o join Searchs as S on o.IPAddress=S.IPAddress and'
+        ' o.[DT-Search]=s.[DT-search] join Customers as c on c.Email=s.Email order by OrderID')
+    order_id_list = orders_customers_join_DF['OrderID'].tolist()
+    email_list = orders_customers_join_DF['Email'].tolist()
+
+    return [order_id_list[counter], email_list[counter]]
+
+
+def random_Email_Customers():
+    customersDF = DB_For_Project.query_To_Pandas('SELECT Email FROM Customers')
+    customer_id_list = customersDF['Email'].tolist()
+
+    return random.choice(customer_id_list)
+
+
+def random_Locaion():
+    locations_DF = DB_For_Project.query_To_Pandas('SELECT LocationID FROM Locations')
+    location_id_list = locations_DF['LocationID'].tolist()
+
+    return str(random.choice(location_id_list))
+
+
+def random_payment_method():
+    payment_method_DF = DB_For_Project.query_To_Pandas('SELECT cardNumber FROM PaymentMethods')
+    payment_method_list = payment_method_DF['cardNumber'].tolist()
+    return str(random.choice(payment_method_list))
+
+
+def random_language():
+    languages = ['English', 'French', 'German', 'Japanese', 'Italian', 'Russian', 'Spanish', 'Chinese (Simplified)',
+                 'Arabic',
+                 'Hindi', 'Portuguese', 'Turkish', 'Indonesian', 'Dutch', 'Korean', 'Bengali', 'Thai', 'Punjabi',
+                 'Greek',
+                 'Sign', 'Hebrew', 'Polish', 'Malay', 'Tagalog', 'Danish', 'Swedish', 'Norwegian', 'Finnish', 'Czech',
+                 'Hungarian', 'Ukrainian']
+
+    return random.choice(languages)
+
+
+############### End Of Random Info Function #######################
 
 def insertCUSTOMERS():
     import names
@@ -49,18 +142,18 @@ def insertCUSTOMERS():
         lastName = names.get_last_name()
         password = get_Random_Password()
         birthDate = getRandomBirthDate()
-        print(birthDate)
-
-        varlist = [email, password, firstName, lastName, birthDate]
 
         query_string = 'INSERT INTO Customers VALUES (\'' + email + '\', ' \
                                                                     '\'' + password + '\',' \
                                                                                       '\'' + firstName + '\',' \
                                                                                                          '\'' + lastName + '\',' \
                                                                                                                            '\'' + birthDate + '\');'
-        print(query_string)
-        DB_For_Project.send_Query(query_string)
-        DB_For_Project.myDB.commit()
+        try:
+            print(query_string)
+            DB_For_Project.send_Query(query_string)
+            DB_For_Project.myDB.commit()
+        except Exception as e:
+            print(e)
 
 
 def insertLOCATIONS():
@@ -100,20 +193,6 @@ def insertLOCATIONS():
             print(e)
 
 
-def random_Email_Customers():
-    customersDF = DB_For_Project.query_To_Pandas('SELECT Email FROM Customers')
-    customer_id_list = customersDF['Email'].tolist()
-
-    return random.choice(customer_id_list)
-
-
-def random_Locaion():
-    locations_DF = DB_For_Project.query_To_Pandas('SELECT LocationID FROM Locations')
-    location_id_list = locations_DF['LocationID'].tolist()
-
-    return str(random.choice(location_id_list))
-
-
 def insertPRODUCTS():
     product_id_counter = 0
 
@@ -121,57 +200,70 @@ def insertPRODUCTS():
         price = round(random.uniform(30.0, 1000.9), 2)
         host_email = random_Email_Customers()
 
-        product_id_counter += 1
-
         query_string = 'INSERT INTO Products VALUES(' + str(product_id_counter) + ', ' + str(
-            price) + ', \'' + host_email + '\');'
-
-        DB_For_Project.send_Query(query_string)
-        DB_For_Project.myDB.commit()
+            price) + ', \'' + host_email + '\', NULL);'
+        print(query_string)
+        try:
+            DB_For_Project.send_Query(query_string)
+            DB_For_Project.myDB.commit()
+            product_id_counter += 1
+        except Exception as e:
+            print(e)
 
 
 def insertREVIEWS():
-    for i in range(1000):
-        host_email = random_Email_Customers()
-        review_datetime = fake.date_time_this_year()
-        rating = random.randrange(1, 6)
-        description = fake.text(30)
-
-        query_string = 'INSERT INTO Reviews VALUES(\'' + host_email + '\', \'' + str(review_datetime) + '\', ' + str(
-            rating) + ', \'' + description + '\');'
-
-        print(query_string)
-        DB_For_Project.send_Query(query_string)
-        DB_For_Project.myDB.commit()
+    order_id_counter = 1
+    for i in range(600):
+        try:
+            order_customer_list = random_Orders(order_id_counter)
+            email = order_customer_list[1]
+            review_datetime = fake.date_time_this_year()
+            rating = random.randrange(1, 6)
+            description = fake.text(30)
+            order_id = order_customer_list[0]
+            query_string = 'INSERT INTO Reviews VALUES(\'' + email + '\', \'' + str(
+                review_datetime) + '\', ' + str(rating) + ', \'' + description + '\', ' + str(order_id) + ');'
+            print(query_string)
+            DB_For_Project.send_Query(query_string)
+            DB_For_Project.myDB.commit()
+            order_id_counter += random.choice([1, 2])
+        except Exception as e:
+            print(e)
 
 
 def insertSEARCHS():
-    for i in range(1000):
-        ip_address = fake.ipv4_private()
-        email = random_Email_Customers()
-        dt_search = fake.date_time_this_year()
-        dt_start = dt_search + datetime.timedelta(days=random.randrange(3, 100))
-        dt_end = dt_start + datetime.timedelta(days=random.randrange(1, 14))
+    for i in range(2000):
+        try:
+            ip_address = fake.ipv4_private()
+            email = random_Email_Customers()
+            type = random.choice(['Online Experience', 'Live Experience', 'Property'])
+            dt_search = fake.date_time_this_century()
+            dt_start = dt_search + datetime.timedelta(days=random.randrange(3, 100))
+            dt_end = dt_start + datetime.timedelta(days=random.randrange(1, 14))
 
-        query_string = 'INSERT INTO Searchs VALUES(\'' + ip_address + '\', \'' + email + '\', \'' + str(
-            dt_search) + '\', \'' + str(dt_start.date()) + '\' , \' ' + str(dt_end.date()) + '\');'
+            query_string = 'INSERT INTO Searchs VALUES(\'' + ip_address + '\', \'' + email + '\', \'' + str(
+                dt_search) + '\',  \'' + type + '\' , \'' + str(dt_start.date()) + '\' , \' ' + str(
+                dt_end.date()) + '\');'
 
-        DB_For_Project.send_Query(query_string)
-        DB_For_Project.myDB.commit()
+            print(query_string)
+            DB_For_Project.send_Query(query_string)
+            DB_For_Project.myDB.commit()
+        except Exception as e:
+            print(e)
 
 
 def insertPROPERTIES():
     property_id_counter = 1
 
-    for i in range(200):
+    for i in range(400):
         property_id = str(property_id_counter)
         style = random.choice(['Apartment', 'Penthouse', 'Private House'])
         number_bedrooms = random.randrange(1, 5)
         number_bathrooms = str(random.randrange(1, number_bedrooms + 1))
         guest_capacity = str(random.randrange(number_bedrooms, number_bedrooms * 2))
-
+        location = str(random_Locaion())
         query_string = 'INSERT INTO Properties VALUES(' + property_id + ', \'' + style + '\', ' + str(
-            number_bedrooms) + ', ' + number_bathrooms + ' ,' + guest_capacity + ');'
+            number_bedrooms) + ', ' + number_bathrooms + ' ,' + guest_capacity + ', ' + location + ');'
 
         print(query_string)
         DB_For_Project.send_Query(query_string)
@@ -179,56 +271,8 @@ def insertPROPERTIES():
         property_id_counter += 1
 
 
-def random_Product():
-    product_DF = DB_For_Project.query_To_Pandas('SELECT ProductID FROM Products')
-    product_id_list = product_DF['ProductID'].tolist()
-
-    return str(random.choice(product_id_list))
-
-
-def random_Property():
-    property_DF = DB_For_Project.query_To_Pandas('SELECT PropertyID FROM Properties')
-    property_id_list = property_DF['PropertyID'].tolist()
-
-    return str(random.choice(property_id_list))
-
-
-def random_Live_Experience():
-    live_experiences_DF = DB_For_Project.query_To_Pandas('SELECT LiveExperienceID FROM LiveExperiences')
-    live_experiences_list = live_experiences_DF['LiveExperienceID'].tolist()
-
-    return str(random.choice(live_experiences_list))
-
-
-def random_Online_Experience():
-    online_experiences_DF = DB_For_Project.query_To_Pandas('SELECT OnlineExperienceID FROM OnlineExperiences')
-    online_experiences_list = online_experiences_DF['OnlineExperienceID'].tolist()
-
-    return str(random.choice(online_experiences_list))
-
-
-def random_ip_and_datetime():
-    searchs_DF = DB_For_Project.query_To_Pandas('SELECT IPAdress,[DT-search] FROM Searchs')
-    ip_list = searchs_DF['IPAdress'].tolist()
-    dt_list = searchs_DF['DT-search'].tolist()
-
-    search_id_list = []
-
-    for i in range(len(ip_list)):
-        search_id_list.append([ip_list[i], dt_list[i]])
-
-    return random.choice(search_id_list)
-
-
-def random_Orders():
-    orders_DF = DB_For_Project.query_To_Pandas('SELECT orderID FROM orders')
-    order_id_list = orders_DF['orderID'].tolist()
-
-    return str(random.choice(order_id_list))
-
-
 def insertSERVICES():
-    for i in range(700):
+    for i in range(500):
         property_id = random_Property()
         service = random.choice(['WIFI', 'Swimming Pool', 'Hot water', 'AC', 'valet', 'Elevator', 'Garden'])
 
@@ -258,57 +302,68 @@ def insertMEASURES():
 def insertORDERS():
     order_id_counter = 1
 
-    for i in range(1000):
+    for i in range(2400):
         order_id = str(order_id_counter)
         product_id = random_Product()
-        dt_buy = str(fake.date_time_this_year())
         search_id = random_ip_and_datetime()
-        ip_adress = search_id[0]
+        dt_buy = search_id[1] + datetime.timedelta(days=random.randrange(0, 2))
+        ip_address = search_id[0]
         dt_search = str(search_id[1])
-
-        query_string = 'INSERT INTO Orders VALUES(' + order_id + ', ' + product_id + ', \'' + dt_buy + '\', \'' + str(
-            ip_adress) + '\', \'' + dt_search + '\');'
+        payment_method = random_payment_method()
+        query_string = 'INSERT INTO Orders VALUES(' + order_id + ', ' + product_id + ', \'' + str(
+            dt_buy) + '\', \'' + str(
+            ip_address) + '\', \'' + dt_search + '\', \'' + payment_method + '\');'
         print(query_string)
-        DB_For_Project.send_Query(query_string)
-        DB_For_Project.myDB.commit()
-        order_id_counter += 1
+
+        try:
+            DB_For_Project.send_Query(query_string)
+            DB_For_Project.myDB.commit()
+            order_id_counter += 1
+        except Exception as e:
+            print(e)
 
 
 def insert_Live_Experiences():
-    product_id_counter = 201
+    product_id_counter = 401
 
     for i in range(299):
         live_id = str(product_id_counter)
         description = fake.text(30)
         duration = str(random.randrange(10, 100))
         location = random_Locaion()
-
         query_string = 'INSERT INTO LiveExperiences VALUES(' + live_id + ', \'' + description + '\', ' + duration + ', ' + location + ');'
-        DB_For_Project.send_Query(query_string)
-        DB_For_Project.myDB.commit()
-        product_id_counter += 1
+        print(query_string)
+
+        try:
+            DB_For_Project.send_Query(query_string)
+            DB_For_Project.myDB.commit()
+            product_id_counter += 1
+        except Exception as e:
+            print(e)
 
 
 def insert_Online_Experiences():
-    product_id_counter = 500
+    product_id_counter = 700
 
-    for i in range(471):
+    for i in range(300):
         online_id = str(product_id_counter)
         tonnage = random.randrange(0, 50)
         max_capacity = str(random.randrange(tonnage, tonnage + 20))
         query_string = 'INSERT INTO OnlineExperiences VALUES(' + online_id + ', ' + str(
             tonnage) + ', ' + max_capacity + ');'
-
-        print(query_string)
-        DB_For_Project.send_Query(query_string)
-        DB_For_Project.myDB.commit()
-        product_id_counter += 1
+        try:
+            print(query_string)
+            DB_For_Project.send_Query(query_string)
+            DB_For_Project.myDB.commit()
+            product_id_counter += 1
+        except Exception as e:
+            print(e)
 
 
 def insert_Live_Languages():
-    for i in range(550):
+    for i in range(400):
         live_id = random_Live_Experience()
-        language = fake.language_name()
+        language = random_language()
 
         try:
             query_string = 'INSERT INTO LiveLanguages VALUES(' + live_id + ', \'' + language + '\');'
@@ -321,9 +376,9 @@ def insert_Live_Languages():
 
 
 def insert_Online_Languages():
-    for i in range(550):
+    for i in range(400):
         online_id = random_Online_Experience()
-        language = fake.language_name()
+        language = random_language()
 
         try:
             query_string = 'INSERT INTO OnlineLanguages VALUES(' + online_id + ', \'' + language + '\');'
@@ -337,36 +392,44 @@ def insert_Online_Languages():
 
 def insert_Payment_Methods():
     order_id_counter = 1
-    for i in range(200):
-        card_provider = random.choice(['visa', 'amex', 'master card'])
+    for i in range(100):
+        card_provider = random.choice(['visa', 'amex', 'mastercard'])
         card_number = str(fake.credit_card_number(card_type=card_provider))
-        experation_date = fake.credit_card_expire()
+        # experation_date = str(fake.credit_card_expire())
+        experation_date = str(fake.credit_card_expire()[0:3]) + random.choice(['18', '19', '20'])
         search_id = random_ip_and_datetime()
-        ip_adress = search_id[0]
+        ip_address = search_id[0]
         dt_search = str(search_id[1])
-        order_id = str(order_id_counter)
-        query_string = 'INSERT INTO [Payment Methods] VALUES(\'' + card_number + '\', \'' + experation_date + '\',  \'' + card_provider + '\', \'' + ip_adress + '\', \'' + dt_search + '\',' + order_id + ');'
+        query_string = 'INSERT INTO [PaymentMethods] VALUES(\'' + card_number + '\', \'' + experation_date + '\',  \'' + card_provider + '\', \'' + ip_address + '\', \'' + dt_search + '\');'
         print(query_string)
-        DB_For_Project.send_Query(query_string)
-        DB_For_Project.myDB.commit()
-        order_id_counter += 1
+        try:
+            DB_For_Project.send_Query(query_string)
+            DB_For_Project.myDB.commit()
+            order_id_counter += 1
+        except Exception as e:
+            print(e)
 
 
 def insert_Retrieved():
     for i in range(1000):
         try:
-            search_id = random_ip_and_datetime()
+            search_id = random_ip_and_dt_not_ordered(i)
             ip_address = str(search_id[0])
             dt_search = str(search_id[1])
-            product_id = str(random_Product())
+            if search_id[2] == 'Online Experience':
+                product_id = str(random_Online_Experience())
+            elif search_id[2] == 'Live Experience':
+                product_id = str(random_Live_Experience())
+            else:
+                product_id = str(random_Property())
 
             query_string = 'INSERT INTO Retrieved VALUES(\'' + str(
                 ip_address) + '\', \'' + dt_search + '\', ' + product_id + ');'
             print(query_string)
             DB_For_Project.send_Query(query_string)
             DB_For_Project.myDB.commit()
-        except:
-            print('Error')
+        except Exception as e:
+            print(e)
 
 
 def insert_Favorites():
@@ -374,12 +437,13 @@ def insert_Favorites():
         email = random_Email_Customers()
         product_id = random_Product()
         dt_add = str(fake.date_time_this_year())
-
         query_string = 'INSERT INTO Favorites VALUES(\'' + email + '\', ' + product_id + ', \'' + dt_add + '\');'
         print(query_string)
-        DB_For_Project.send_Query(query_string)
-        DB_For_Project.myDB.commit()
-
+        try:
+            DB_For_Project.send_Query(query_string)
+            DB_For_Project.myDB.commit()
+        except Exception as e:
+            print(e)
 
 def insert_Distinct_Lookups():
     insert_countries = 'insert into Countries select distinct country from Locations'
@@ -387,21 +451,20 @@ def insert_Distinct_Lookups():
     DB_For_Project.send_Query(insert_countries)
     DB_For_Project.myDB.commit()
 
-
-# insertCUSTOMERS()
-# insertLOCATIONS()
-# insertPRODUCTS()
-# insertREVIEWS()
-# insertSEARCHS()
-# insertPROPERTIES()
-# insertSERVICES()
-# insertMEASURES()
-# insertORDERS()
-# insert_Payment_Methods()
-# insert_Retrieved()
-# insert_Live_Experiences()
-# insert_Online_Experiences()
-# insert_Live_Languages()
-# insert_Online_Languages()
-# insert_Favorites()
-# insert_Distinct_Lookups()
+insertCUSTOMERS()
+insertLOCATIONS()
+insertPRODUCTS()
+insertSEARCHS()
+insertPROPERTIES()
+insertSERVICES()
+insertMEASURES()
+insert_Payment_Methods()
+insertORDERS()
+insertREVIEWS()
+insert_Live_Experiences()
+insert_Online_Experiences()
+insert_Live_Languages()
+insert_Online_Languages()
+insert_Retrieved()
+insert_Favorites()
+insert_Distinct_Lookups()
