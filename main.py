@@ -1,13 +1,14 @@
 import random
 import string
 import datetime
-from my_DB_Packages.sql_Server_Connection import Sql_Server_DataBase
+
 from faker import Faker
 
 fake = Faker()
 
-############### DB Connector - Enter (user_name, DB_name) ##############
-DB_For_Project = Sql_Server_DataBase("XPS\SQLEXPRESS", "Project_For_DB")
+############### Unique For Gal ##############
+from sql_packages.sql_Server_Connection import Sql_Server_DataBase
+DB_For_Project = Sql_Server_DataBase("LAPTOP-E1556I4A\SQLEXPRESS", "AirBNB")
 
 
 ############### Random Info Function #######################
@@ -60,9 +61,9 @@ def random_Live_Experience():
 
 def random_Online_Experience():
     online_experiences_DF = DB_For_Project.query_To_Pandas('SELECT OnlineExperienceID FROM OnlineExperiences')
-    online_experiences_list = online_experiences_DF['OnlineExperienceID'].tolist()
+    online_expreriences_list = online_experiences_DF['OnlineExperienceID'].tolist()
 
-    return str(random.choice(online_experiences_list))
+    return str(random.choice(online_expreriences_list))
 
 
 def random_ip_and_datetime():
@@ -77,23 +78,28 @@ def random_ip_and_datetime():
 
     return random.choice(search_id_list)
 
+
 def random_ip_and_dt_not_ordered(counter):
-    searchs_DF = DB_For_Project.query_To_Pandas('select IPAddress,[DT-search],type from Searchs except select'
-                                                ' s.IPAddress,s.[DT-search], s.type from Orders as o join Searchs as s'
-                                                ' on o.[DT-Search]=s.[DT-search] and o.IPAddress=s.IPAddress')
+    searchs_DF = DB_For_Project.query_To_Pandas('select IPAddress,[DT-search],type from Searchs except select '
+                                                's.IPAddress,s.[DT-search], s.type from Orders as o join PaymentMethods'
+                                                ' as pay on o.creditcardnumber=pay.CardNumber join Searchs as s on '
+                                                'pay.[DT-Search]=s.[DT-search] and pay.IPAddress=s.IPAddress')
     ip_list = searchs_DF['IPAddress'].tolist()
     dt_list = searchs_DF['DT-search'].tolist()
     type_list = searchs_DF['type'].tolist()
-    search_id_list =[]
+    search_id_list = []
     for i in range(len(ip_list)):
         search_id_list.append([ip_list[i], dt_list[i], type_list[i]])
 
     return search_id_list[counter]
 
+
 def random_Orders(counter):
     orders_customers_join_DF = DB_For_Project.query_To_Pandas(
-        'select S.Email, O.OrderID from Orders as o join Searchs as S on o.IPAddress=S.IPAddress and'
-        ' o.[DT-Search]=s.[DT-search] join Customers as c on c.Email=s.Email order by OrderID')
+        'select S.Email, O.OrderID from Orders as o join paymentmethods as pay on o.creditcardnumber=pay.CardNumber '
+        'join Searchs as S on pay.IPAddress=S.IPAddress and pay.[DT-Search]=s.[DT-search] join Customers as c on'
+        ' c.Email=s.Email order by OrderID')
+
     order_id_list = orders_customers_join_DF['OrderID'].tolist()
     email_list = orders_customers_join_DF['Email'].tolist()
 
@@ -134,12 +140,11 @@ def random_language():
 ############### End Of Random Info Function #######################
 
 def insertCUSTOMERS():
-    import names
 
-    for i in range(900):
+    for i in range(600):
         email = fake.email()
-        firstName = names.get_first_name()
-        lastName = names.get_last_name()
+        firstName = fake.first_name()
+        lastName = fake.last_name()
         password = get_Random_Password()
         birthDate = getRandomBirthDate()
 
@@ -196,7 +201,7 @@ def insertLOCATIONS():
 def insertPRODUCTS():
     product_id_counter = 0
 
-    for i in range(1600):
+    for i in range(400):
         price = round(random.uniform(30.0, 1000.9), 2)
         host_email = random_Email_Customers()
 
@@ -232,18 +237,19 @@ def insertREVIEWS():
 
 
 def insertSEARCHS():
-    for i in range(2000):
+    for i in range(1500):
         try:
             ip_address = fake.ipv4_private()
             email = random_Email_Customers()
             type = random.choice(['Online Experience', 'Live Experience', 'Property'])
+            number_of_guests = str(random.randint(1,5))
             dt_search = fake.date_time_this_century()
             dt_start = dt_search + datetime.timedelta(days=random.randrange(3, 100))
             dt_end = dt_start + datetime.timedelta(days=random.randrange(1, 14))
 
             query_string = 'INSERT INTO Searchs VALUES(\'' + ip_address + '\', \'' + email + '\', \'' + str(
-                dt_search) + '\',  \'' + type + '\' , \'' + str(dt_start.date()) + '\' , \' ' + str(
-                dt_end.date()) + '\');'
+                dt_search) + '\',  \'' + type + '\' , '+ str(number_of_guests) +',\'' + str(dt_start.date()) \
+                           + '\' , \' ' + str(dt_end.date()) + '\');'
 
             print(query_string)
             DB_For_Project.send_Query(query_string)
@@ -253,9 +259,9 @@ def insertSEARCHS():
 
 
 def insertPROPERTIES():
-    property_id_counter = 1
+    property_id_counter = 0
 
-    for i in range(400):
+    for i in range(170):
         property_id = str(property_id_counter)
         style = random.choice(['Apartment', 'Penthouse', 'Private House'])
         number_bedrooms = random.randrange(1, 5)
@@ -272,7 +278,7 @@ def insertPROPERTIES():
 
 
 def insertSERVICES():
-    for i in range(500):
+    for i in range(300):
         property_id = random_Property()
         service = random.choice(['WIFI', 'Swimming Pool', 'Hot water', 'AC', 'valet', 'Elevator', 'Garden'])
 
@@ -286,7 +292,7 @@ def insertSERVICES():
 
 
 def insertMEASURES():
-    for i in range(400):
+    for i in range(300):
         property_id = random_Property()
         measure = random.choice(['Fire Extinguisher', 'Fire Alarm', 'Fire Escape stairs', 'Guard'])
 
@@ -302,19 +308,14 @@ def insertMEASURES():
 def insertORDERS():
     order_id_counter = 1
 
-    for i in range(2400):
+    for i in range(1400):
         order_id = str(order_id_counter)
         product_id = random_Product()
         search_id = random_ip_and_datetime()
         dt_buy = search_id[1] + datetime.timedelta(days=random.randrange(0, 2))
-        ip_address = search_id[0]
-        dt_search = str(search_id[1])
         payment_method = random_payment_method()
-        query_string = 'INSERT INTO Orders VALUES(' + order_id + ', ' + product_id + ', \'' + str(
-            dt_buy) + '\', \'' + str(
-            ip_address) + '\', \'' + dt_search + '\', \'' + payment_method + '\');'
+        query_string = 'INSERT INTO Orders VALUES(' + order_id + ', ' + product_id + ', \'' + str(dt_buy) + '\', \'' + payment_method + '\');'
         print(query_string)
-
         try:
             DB_For_Project.send_Query(query_string)
             DB_For_Project.myDB.commit()
@@ -324,14 +325,17 @@ def insertORDERS():
 
 
 def insert_Live_Experiences():
-    product_id_counter = 401
+    product_id_counter = 169
 
-    for i in range(299):
+    for i in range(130):
         live_id = str(product_id_counter)
         description = fake.text(30)
         duration = str(random.randrange(10, 100))
+        tonnage = 0
+        max_capacity = random.randint(10,40)
         location = random_Locaion()
-        query_string = 'INSERT INTO LiveExperiences VALUES(' + live_id + ', \'' + description + '\', ' + duration + ', ' + location + ');'
+        query_string = 'INSERT INTO LiveExperiences VALUES(' + live_id + ', \'' + description + '\', ' + duration \
+                       + ', '+ str(tonnage) + ', ' + str(max_capacity) + ', ' + location + ');'
         print(query_string)
 
         try:
@@ -343,9 +347,9 @@ def insert_Live_Experiences():
 
 
 def insert_Online_Experiences():
-    product_id_counter = 700
+    product_id_counter = 300
 
-    for i in range(300):
+    for i in range(120):
         online_id = str(product_id_counter)
         tonnage = random.randrange(0, 50)
         max_capacity = str(random.randrange(tonnage, tonnage + 20))
@@ -361,7 +365,7 @@ def insert_Online_Experiences():
 
 
 def insert_Live_Languages():
-    for i in range(400):
+    for i in range(150):
         live_id = random_Live_Experience()
         language = random_language()
 
@@ -376,7 +380,7 @@ def insert_Live_Languages():
 
 
 def insert_Online_Languages():
-    for i in range(400):
+    for i in range(150):
         online_id = random_Online_Experience()
         language = random_language()
 
@@ -392,11 +396,10 @@ def insert_Online_Languages():
 
 def insert_Payment_Methods():
     order_id_counter = 1
-    for i in range(100):
+    for i in range(1600):
         card_provider = random.choice(['visa', 'amex', 'mastercard'])
         card_number = str(fake.credit_card_number(card_type=card_provider))
-        # experation_date = str(fake.credit_card_expire())
-        experation_date = str(fake.credit_card_expire()[0:3]) + random.choice(['18', '19', '20'])
+        experation_date = random.choice([str(fake.credit_card_expire()[0:3]) + random.choice(['18', '19', '20', '21', '22']), str(fake.credit_card_expire())])
         search_id = random_ip_and_datetime()
         ip_address = search_id[0]
         dt_search = str(search_id[1])
@@ -411,7 +414,7 @@ def insert_Payment_Methods():
 
 
 def insert_Retrieved():
-    for i in range(1000):
+    for i in range(600):
         try:
             search_id = random_ip_and_dt_not_ordered(i)
             ip_address = str(search_id[0])
@@ -433,7 +436,7 @@ def insert_Retrieved():
 
 
 def insert_Favorites():
-    for i in range(1000):
+    for i in range(700):
         email = random_Email_Customers()
         product_id = random_Product()
         dt_add = str(fake.date_time_this_year())
@@ -445,24 +448,26 @@ def insert_Favorites():
         except Exception as e:
             print(e)
 
+
 def insert_Distinct_Lookups():
     insert_countries = 'insert into Countries select distinct country from Locations'
     insert_cities = 'insert into Cities select distinct city from Locations'
     DB_For_Project.send_Query(insert_countries)
     DB_For_Project.myDB.commit()
 
+
 insertCUSTOMERS()
 insertLOCATIONS()
 insertPRODUCTS()
 insertSEARCHS()
 insertPROPERTIES()
+insert_Live_Experiences()
+insert_Online_Experiences()
 insertSERVICES()
 insertMEASURES()
 insert_Payment_Methods()
 insertORDERS()
 insertREVIEWS()
-insert_Live_Experiences()
-insert_Online_Experiences()
 insert_Live_Languages()
 insert_Online_Languages()
 insert_Retrieved()
